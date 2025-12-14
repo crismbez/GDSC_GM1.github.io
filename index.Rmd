@@ -7,6 +7,8 @@ author: "Cristina Gómez Baena, Alma Gavilán Velasco, Reyes Mª Jurado Jiménez
 date: "`r Sys.Date ()`"
 
 output: 
+  github_document:
+    html_preview: false
   html_document:
    theme: null
    css: styles.css #Aplicamos un estilo a nuestro HTML
@@ -372,3 +374,4 @@ El gráfico de barras divergentes muestra las dianas celulares más y menos sens
 Como conclusión final, podemos afirmar que existen patrones de respuesta a fármacos anticancerígenos según la sensibilidad frente a ellos que presentan las células fuertemente asociados a distintos factores como lo son el fármaco en sí, la ruta metabólica o vía de señalización en la que interfieren y la diana celular a la que van dirigidos.
 
 # Bibliografía
+
