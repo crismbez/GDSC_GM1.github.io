@@ -1,0 +1,98 @@
+/* Asegura que Times New Roman se cargue del sistema */
+@font-face {
+  font-family: "Times New Roman";
+  src: local("Times New Roman");
+}
+
+/* Aplicar Times New Roman 18pt a todo el documento */
+body, p, li, h1, h2, h3, h4, h5, h6, table {
+  font-family: "Times New Roman", serif !important;
+  font-size: 18pt !important;
+  line-height: 1.5;
+  text-align: justify;
+  color: #000000;
+}
+
+/* Encabezados: mantener Times y alineación */
+h1, h2, h3, h4, h5, h6 {
+  text-align: left;
+  font-weight: bold;
+}
+
+/* Listas justificación */
+li {
+  text-align: justify;
+}
+
+
+/* Color normal de los enlaces */
+a {
+  color: #800080;   /* morado */
+}
+
+/* Color cuando el cursor está encima */
+a:hover {
+  color: #E14174;   /* rosa */
+}
+
+/* Color cuando ya está visitado */
+a:visited {
+  color: #A152A1;   /* lila */
+}
+
+/* Bloques de código en fondo gris suave */
+pre, code {
+  background-color: #f5f5f5 !important;
+  border: 1px solid #e0e0e0;
+  padding: 6px;
+  border-radius: 4px;
+  font-family: "Courier New", monospace !important;
+}
+
+/* Para que los bloques grandes mantengan su formato */
+pre {
+  padding: 10px;
+  overflow-x: auto;
+}
+
+/* Tablas generadas por R */
+table {
+  font-family: "Times New Roman", serif !important;
+  font-size: 18pt !important;
+  border-collapse: collapse;
+  width: 100%;
+  background-color: transparent !important;
+  text-align: center; /* centra el texto de toda la tabla */
+}
+
+/* Bordes de celdas */
+table, th, td {
+  border: 1px solid #000000;
+  padding: 6px;
+}
+
+/* Encabezados de tabla */
+th {
+  font-weight: bold;
+  text-align: center; /* centra encabezados */
+}
+
+/* Celdas */
+td {
+  text-align: center; /* centra contenido de las celdas */
+  vertical-align: middle;
+}
+
+
+
+/* Toda la tabla centrada por defecto */
+table, th, td {
+  text-align: center;
+}
+
+/* Primera columna alineada a la izquierda */
+table th:first-child,
+table td:first-child {
+  text-align: left;
+  padding-left: 8px;  /* opcional, margen interno */
+}

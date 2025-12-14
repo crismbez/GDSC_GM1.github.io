@@ -1,0 +1,374 @@
+---
+title: |
+  ![](Logo_UCO.png){width=5%} 
+  Genomics of drug sensitivity in cancer (GDSC) 
+  ![](Logo_Facultad_de_Ciencias.png){width=7.5%}
+author: "Cristina Gómez Baena, Alma Gavilán Velasco, Reyes Mª Jurado Jiménez"
+date: "`r Sys.Date ()`"
+
+output: 
+  html_document:
+   theme: null
+   css: styles.css #Aplicamos un estilo a nuestro HTML
+   toc: TRUE
+   number_sections: TRUE
+   
+bibliography: [GDSC.bib, libraries.bib]
+link-citations: TRUE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introducción
+
+La **Genomics of Drug Sensitivity in Cancer (GDSC)** es actualmente la base de datos pública más amplia dedicada al estudio de la sensibilidad a fármacos en cáncer.
+
+La importancia de GDSC radica en que gracias a ella podemos identificar biomarcadores moleculares que serán capaces de predecir la sensibilidad a fármacos, lo cual es necesario para avanzar en la medicina referente al cáncer. Las alteraciones genómicas condicionan profundamente la respuesta terapéutica, por lo que recursos como GDSC permiten descubrir relaciones funcionales entre mutaciones, vías biológicas y eficacia de fármacos [@yang2012genomics].
+
+En este informe, utilizamos los datos almacenados en la [página del proyecto GDSC](https://www.cancerrxgene.org/downloads/bulk_download). En primer lugar, cargamos la librería [readxl]{style="color:purple;font-family:Courier New;"} y los datos en el environment, creando un objeto llamado [Data]{style="color:purple;font-family:Courier New;"}.
+
+```{r cargar dataset, echo= FALSE}
+#cambiar echo si se envía script.
+library(readxl)
+Data <- read_excel("GDSC2_fitted_dose_response_27Oct23.xlsx")
+View(Data)
+```
+
+La base de datos incluye `r ncol(Data)` variables. Contabilizamos las variables usando `ncol(Data)`. En nuestro proyecto seleccionaremos algunas de estas y analizaremos relaciones entre ellas con la finalidad de evaluar diferencias de sensibilidad entre distintos grupos comparables. Para ello, haremos uso de varios test estadísticos (*t de student*, *chi cuadrado*, *ANOVA*).
+
+# Objetivos
+
+## Objetivo general
+
+Identificar patrones de respuesta a fármacos anticancerígenos en líneas celulares del GDSC utilizando métricas relativas a la sensibilidad en relación a rutas metabólicas y dianas moleculares.
+
+## Objetivos específicos
+
+-   Comparar la sensibilidad a dos fármacos distintos que actúan sobre la misma vía metabólica (señalización de MAPK).
+-   Clasificar las rutas metabólicas en función a la sensibilidad que presentan a fármacos anticancerígenos.
+-   Identificar las dianas celulares que mejor responden a tratamiento con fármacos anticancerígenos.
+
+# Hipótesis
+
+H1.0: *Las medidas de sensibilidad entre los fármacos que actúan sobre la señalización de p38 y JNK no difieren.*
+
+H1.1: *Las medidas de sensibilidad entre los fármacos que actúan sobre la señalización de p38 y JNK son diferentes.*
+
+H2.0: *Distintas rutas metabólicas no presentan distintos niveles de sensibilidad a fármacos anticancerígenos.*
+
+H2.1: *Distintas rutas metabólicas presentan distintos niveles de sensibilidad a fármacos anticancerígenos.*
+
+H3.0: *La respuesta a los fármacos no varía entre distinas dianas celulares.*
+
+H3.1: *La respuesta a los fármacos varía según las dianas celulares.*
+
+# Materiales y métodos
+
+Para realizar nuestros datos, utilizamos la `r R.version.string`.
+
+Además, utilizaremos las librerías [readxl]{style="color:purple;font-family:Courier New;"} cargada anteriormente [@R-readxl], [dplyr]{style="color:purple;font-family:Courier New;"} [@R-dplyr], [knitr]{style="color:purple;font-family:Courier New;"} [@R-knitr; @knitr2015; @knitr2014], [tidyverse]{style="color:purple;font-family:Courier New;"} [@tidyverse] y [ggplot2]{style="color:purple;font-family:Courier New;"} [@R-ggplot2; @ggplot22016].
+
+```{r cargar librerías, echo=FALSE, warning=FALSE, message=FALSE}
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+```
+
+## Procesado de los datos
+
+```{r visualización y comprobación dataset, echo=FALSE, include=FALSE}
+glimpse(Data)
+
+is.na(Data) %>% head(n = 10)
+sum(is.na(Data))
+
+```
+
+Tras comprobar que no hay datos perdidos con `is.na()` y `sum()`, procesamos el dataset para seleccionar únicamente las variables con las que trabajaremos. Usamos las funciones `mutate()`, `relocate()` y `select()`, además de `rename()` para cambiar el nombre a las columnas. Para comprobarlo, elaboramos la siguiente tabla para visualizar las 10 primeras filas del dataset procesado.
+
+```{r procesado de los datos, echo=FALSE}
+DataProc <- Data %>% # Creamos un nuevo objeto que sean nuestros datos procesados
+  mutate(Sensibilidad = case_when(
+    LN_IC50 < -7 ~ "Alta",
+    LN_IC50 >= -7 & LN_IC50 <= -5 ~ "Media",
+    LN_IC50 > -5 ~ "Baja" )) %>%  # Creamos una nueva variable
+  relocate(c(PATHWAY_NAME, PUTATIVE_TARGET, AUC, Sensibilidad, LN_IC50), .after = DRUG_NAME) %>% # Reordenamos nuestras variables
+    select(DRUG_NAME:LN_IC50) # Seleccionamos las variables de interés
+
+DataProc <- DataProc %>%
+  rename(
+    Fármaco = DRUG_NAME,
+    Ruta_metabólica = PATHWAY_NAME,
+    Diana_celular = PUTATIVE_TARGET
+  )
+
+
+#Observamos que se ha creado la nueva variable y que se han ordenado.
+# Cargar paquete
+library(knitr)
+
+Tabla_DataProc <- head(DataProc, 10)  # Tomar las primeras 10 filas
+
+# Crear la tabla con kable
+kable(Tabla_DataProc, 
+      caption = "Datos procesados",
+      format = "html",   # HTML para R Markdown
+      table.attr = 'class="table table-bordered"')
+
+```
+
+## Variables escogidas
+
+Para cumplir con los objetivos establecidos, se seleccionaron las siguientes variables:
+
+-   **Fármaco**: Nombres de los fármacos anticancerígenos.
+
+-   **Ruta_metabólica**: Nombres de las rutas o vías de señalización.
+
+-   **Diana_celular**: Distintas dianas sobre las que actúan los fármacos.
+
+-   **AUC**: El AUC (área bajo la curva) mide la concentración plasmática del fármaco en el organismo durante el tiempo tras su administración. Representa el área que queda bajo la curva de concentración del fármaco frente al tiempo tras administrarlo, por lo que sus unidades combinan concentración y tiempo (por ejemplo, µg·h/mL). Así, se puede determinar qué cantidad de fármaco llega a las células.
+
+-   **LN_IC50**: El IC50 es una medida que representa la concentración de un fármaco que reduce la actividad de una enzima, célula o receptor en un 50% respecto a su actividad normal. Cuanto más bajo sea, más potente es el fármaco ya que se necesita menos concentración para alcanzar el mismo nivel de inhibición. Se expresa con su logaritmo para facilitar su análisis y representación gráfica.
+
+-   **Sensibilidad**: Se trata de una variable que hemos creado para encasillar los distintos valores de IC50 en niveles (alto, medio y bajo) dependiendo de si son:
+
+    -   \< -7 alto
+    -   -7 a -5 medio
+    -   \> -5 bajo
+
+## Análisis estadísticos
+
+### t de student
+
+Este test se utiliza para comparar una variable dependiente con otra independiente categórica con 2 grupos.
+
+Utilizaremos este análisis para comparar los fármacos que actúan sobre la de señalización JNK y p38, **Doramapimod** (inhibidor de p38) e **inhibidor VIII de JNK**. Esta señalización se refiere a dos rutas de MAPK que actúan principalente en respuestas a estrés celular e inflamación para regular distintos procesos como la expresión génica, apoptosis, proliferación y diferenciación. Se estudian en cáncer porque están implicadas en el desarrollo de esta enfermedad.
+
+Para realizar el análisis, compararemos los AUC de ambos fármacos para comprobar si hay diferencias en la concentración de cada uno de estos que llega a las células en un tiempo determinado. Es decir, estaremos comparando la exposición de las células a cada uno de los fármacos desde su administración.
+
+Para llevar a cabo el análisis, primero seleccionamos solo las observaciones de la señalización JNK y p38. Luego, aplicamos el test.
+
+```{r t student análisis, echo=TRUE, message=FALSE, warning=FALSE, results='hide'}
+JNK_p38 <- DataProc %>% 
+  filter(Ruta_metabólica == "JNK and p38 signaling") #Filtramos por la vía de señalización sobre la que haremos el análisis
+
+t.test(AUC ~ Fármaco, data = JNK_p38)
+
+#En este punto, mostramos el código y ocultamos los resultados, que se verán más adelante
+```
+
+Elaboramos un gráfico boxplot para visualizar los resultados de la siguiente forma:
+
+```{r t grafico análisis, echo=TRUE, message=FALSE, warning=FALSE, fig.show='hide'}
+
+JNK_p38 %>% 
+  ggplot(aes(x = Fármaco, y = AUC, colour = Fármaco)) + 
+  geom_boxplot(outlier.shape = NA, width = 0.9) +
+  geom_jitter(width = 0.18, alpha = 0.1, size = 0.75) + #Editamos los parámetros para que los puntos no se vean muy superpuestos
+  coord_cartesian(ylim = c(0.86, 1.01)) + #Ajustamos el eje y para que se vean las cajas de forma más clara
+  labs(
+    title = "Exposición celular a inhibidores de la vía JNK y p38",
+    x = "Fármaco",
+    y = "Área bajo la curva (AUC)"
+  ) +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5)
+  )
+
+```
+
+### chi cuadrado
+
+Este test se utiliza para evaluar la asociación entre dos variables categóricas, permitiendo determinar si la distribución de una variable depende de los niveles de la otra.
+
+Utilizaremos este análisis para estudiar la relación entre las rutas metabólicas y los niveles de sensibilidad a fármacos anticancerígenos, clasificada en distintos niveles (alta, media y baja) en función de la respuesta celular observada.
+
+Para realizar el análisis, se comparará la frecuencia de cada nivel de sensibilidad entre las distintas rutas metabólicas, con el objetivo de comprobar si existen diferencias en la respuesta a los fármacos según la ruta implicada. Es decir, se evaluará si determinadas rutas se asocian a una mayor o menor sensibilidad a los tratamientos anticancerígenos.
+
+Para llevar a cabo el análisis, primero se construye una tabla de contingencia entre la ruta metabólica y el nivel de sensibilidad, sobre la cual se aplica el test x^2^ de independencia.
+
+```{r chi cuadrado análisis, echo=TRUE, message=FALSE, warning=FALSE, results='hide'}
+
+tabla_chi <- table(DataProc$Ruta_metabólica, DataProc$Sensibilidad)
+tabla_chi #Creamos una tabla de contingencia a partir de la cual se realiza el análisis
+
+chi <- chisq.test(tabla_chi)
+chi
+
+```
+
+Elaboramos un gráfico de barras para visualizarlo.
+
+```{r gráfico chi análisis, echo=TRUE, message=FALSE, warning=FALSE, fig.show='hide'}
+
+DataProc %>% 
+  ggplot(aes(x = Sensibilidad, fill = Ruta_metabólica)) + #Creamos barras para cada nivel de sensibilidad que se coloreen en función de las rutas metabólicas
+  geom_bar(position = "fill") +
+  labs(x = "Nivel de sensibilidad", y = "")
+
+```
+
+### ANOVA
+
+El test ANOVA (Analysis of Variance) es una prueba estadística que se utiliza para comparar las medias de más de dos grupos y determinar si existen diferencias significativas entre ellos. En lugar de hacer múltiples comparaciones individuales, ANOVA evalúa si la variabilidad entre grupos es mayor que la variabilidad dentro de los grupos, lo que indicaría un efecto real del factor estudiado.
+
+En este caso, utilizamos ANOVA para comparar la sensibilidad a los fármacos entre distintas dianas celulares, usando la medida del LN_IC50, que refleja la sensibilidad al tratamiento. Cada diana celular representa un grupo distinto, y con ANOVA evaluamos si la eficacia de los tratamientos varía según la diana tratada
+
+```{r ANOVA análisis, echo=TRUE, message=FALSE, warning=FALSE, results='hide'}
+
+DataProc$Diana_celular <- as.factor(DataProc$Diana_celular)
+
+anova <- aov(LN_IC50 ~ Diana_celular, data = DataProc)
+
+summary(anova) #Con summary mostramos el resultado de p value
+
+```
+
+A continuación, elaboramos un gráfico para visualizarlo.Como utilizamos un número demasiado grande de dianas celulares, para el gráfico solo escogemos aquellas que están en los extremos de más y menos sensibilidad.
+
+```{r ANOVA análisis grafico, echo=TRUE, message=FALSE, warning=FALSE,fig.show='hide'}
+
+stats <- DataProc %>%
+  group_by(Diana_celular) %>%
+  summarise(mediana = median(LN_IC50, na.rm = TRUE)) %>%
+  arrange(mediana)
+
+top <- bind_rows(
+  head(stats, 10), #Seleccionamos solo las dianas que están en los extremos para que el gráfico sea legible y entendible
+  tail(stats, 10)
+)
+
+ggplot(top, aes(x = reorder(Diana_celular, mediana), y = mediana)) +
+  geom_col(fill = "pink") + #Cambiamos el color de las barras
+  coord_flip() +
+  labs(
+    x = "Diana celular",
+    y = "Mediana LN(IC50)",
+    title = "Dianas más y menos sensibles"
+  ) +
+  theme_minimal()
+
+```
+
+# Resultados
+
+## Análisis 1
+
+***t de student y gráfico boxplot***
+
+```{r t student result, echo=FALSE, message=FALSE, warning=FALSE}
+JNK_p38 <- DataProc %>% 
+  filter(Ruta_metabólica == "JNK and p38 signaling")
+
+t.test(AUC ~ Fármaco, data = JNK_p38)
+```
+
+```{r t grafico result, echo=FALSE, message=FALSE, warning=FALSE}
+
+JNK_p38 %>% 
+  ggplot(aes(x = Fármaco, y = AUC, colour = Fármaco)) +
+  geom_boxplot(outlier.shape = NA, width = 0.9) +
+  geom_jitter(width = 0.18, alpha = 0.1, size = 0.75) +
+  coord_cartesian(ylim = c(0.86, 1.01)) +
+  labs(
+    title = "Exposición celular a inhibidores de la vía JNK y p38",
+    x = "Fármaco",
+    y = "Área bajo la curva (AUC)"
+  ) +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5)
+  )
+
+```
+
+## Análisis 2
+
+***x^2^ y gráfico de barras***
+
+```{r chi cuadrado result, echo=FALSE, message=FALSE, warning=FALSE}
+
+tabla_chi <- table(DataProc$Ruta_metabólica, DataProc$Sensibilidad)
+tabla_chi
+
+chi <- chisq.test(tabla_chi)
+chi
+
+```
+
+```{r gráfico chi result, echo=FALSE, message=FALSE, warning=FALSE}
+
+DataProc %>% 
+  ggplot(aes(x = Sensibilidad, fill = Ruta_metabólica)) +
+  geom_bar(position = "fill") +
+  labs(x = "Nivel de sensibilidad", y = "")
+
+```
+
+## Análisis 3
+
+***ANOVA y gráfico de barras divergentes***
+
+```{r ANOVA result, echo=FALSE, message=FALSE, warning=FALSE}
+
+DataProc$Diana_celular <- as.factor(DataProc$Diana_celular)
+
+anova <- aov(LN_IC50 ~ Diana_celular, data = DataProc)
+
+summary(anova)
+
+```
+
+```{r ANOVA result grafico, echo=FALSE, message=FALSE, warning=FALSE}
+
+stats <- DataProc %>%
+  group_by(Diana_celular) %>%
+  summarise(mediana = median(LN_IC50, na.rm = TRUE)) %>%
+  arrange(mediana)
+
+top <- bind_rows(
+  head(stats, 10),
+  tail(stats, 10)
+)
+
+ggplot(top, aes(x = reorder(Diana_celular, mediana), y = mediana)) +
+  geom_col(fill = "pink") +
+  coord_flip() +
+  labs(
+    x = "Diana celular",
+    y = "Mediana LN(IC50)",
+    title = "Dianas más y menos sensibles"
+  ) +
+  theme_minimal()
+
+```
+
+# Discusión
+
+## Efecto de dos fármacos distintos sobre la vía de señalización JNK y p38
+
+El resultado del análisis t de student dió p \< 0,05; por lo que rechazamos la hipótesis nula y podemos aceptar la alternativa. Las medidas de sensibilidad entre los fármacos que actúan sobre la vía de señalización JNK y p38 muestran diferencias significativas.
+
+El gráfico boxplot proporciona un representación visual de esto, ya que podemos obervar como el Doramapimod presenta valores de AUC más bajos que el inhibidor VIII de JNK, por lo que el primero presentaría niveles de sensibilidad celular superiores.
+
+## Niveles de sensibilidad según la ruta metabólica
+
+El resultado del análisis x^2^ muestra p \< 0,05; por lo que se rechaza la hipótesis nula y aceptamos la alternativa. Hay diferencias significativas en los niveles de sensibilidad a fármacos anticancerígenos entre las distintas rutas metabólicas.
+
+El gráfico de barras muestra de forma visual clara cómo los patrones de sensibilidad cambian según la ruta, de forma que algunas se relacionan muy estrechamente con alta, media o baja sensibilidad.
+
+## Respuesta a fármacos según la diana celular
+
+El resultado del análisis ANOVA muestra p \< 0,05, por lo que se rechaza la hipótesis nula y se acepta la alternativa. La respuesta a fármacos muestra diferencias significativas entre las distintas dianas celulares.
+
+El gráfico de barras divergentes muestra las dianas celulares más y menos sensibles según la mediana de IC50, de forma que las barras positivas muestran las dianas menos sensibles y las más negativas representan aquellas con mayor sensibilidad.
+
+# Conclusión
+
+Como conclusión final, podemos afirmar que existen patrones de respuesta a fármacos anticancerígenos según la sensibilidad frente a ellos que presentan las células fuertemente asociados a distintos factores como lo son el fármaco en sí, la ruta metabólica o vía de señalización en la que interfieren y la diana celular a la que van dirigidos.
+
+# Bibliografía
