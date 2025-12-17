@@ -8,7 +8,7 @@ date: "`r Sys.Date ()`"
 
 output: 
   github_document:
-     html_preview: FALSE
+      html_preview: FALSE
   html_document:
    theme: null
    css: styles.css #Aplicamos un estilo a nuestro HTML
@@ -234,7 +234,7 @@ summary(anova) #Con summary mostramos el resultado de p value
 
 ```
 
-A continuación, elaboramos un gráfico para visualizarlo.Como utilizamos un número demasiado grande de dianas celulares, para el gráfico solo escogemos aquellas que están en los extremos de más y menos sensibilidad.
+A continuación, elaboramos un gráfico para visualizarlo. Como utilizamos un número demasiado grande de dianas celulares, para el gráfico solo escogemos aquellas que están en los extremos de más y menos sensibilidad.
 
 ```{r ANOVA análisis grafico, echo=TRUE, message=FALSE, warning=FALSE,fig.show='hide'}
 
@@ -359,7 +359,7 @@ ggplot(top, aes(x = reorder(Diana_celular, mediana), y = mediana)) +
 
 El resultado del análisis t de student dió p \< 0,05; por lo que rechazamos la hipótesis nula y podemos aceptar la alternativa. Las medidas de sensibilidad entre los fármacos que actúan sobre la vía de señalización JNK y p38 muestran diferencias significativas.
 
-El gráfico boxplot proporciona un representación visual de esto, ya que podemos obervar como el Doramapimod presenta valores de AUC más bajos que el inhibidor VIII de JNK, por lo que el primero presentaría niveles de sensibilidad celular superiores.
+El gráfico boxplot proporciona un representación visual de esto, ya que podemos observar como el Doramapimod presenta valores de AUC más bajos que el inhibidor VIII de JNK, por lo que el primero presentaría niveles de sensibilidad celular superiores.
 
 ## Niveles de sensibilidad según la ruta metabólica
 

@@ -635,7 +635,7 @@ anova <- aov(LN_IC50 ~ Diana_celular, data = DataProc)
 summary(anova) #Con summary mostramos el resultado de p value
 ```
 
-A continuación, elaboramos un gráfico para visualizarlo.Como utilizamos
+A continuación, elaboramos un gráfico para visualizarlo. Como utilizamos
 un número demasiado grande de dianas celulares, para el gráfico solo
 escogemos aquellas que están en los extremos de más y menos
 sensibilidad.
@@ -744,7 +744,7 @@ medidas de sensibilidad entre los fármacos que actúan sobre la vía de
 señalización JNK y p38 muestran diferencias significativas.
 
 El gráfico boxplot proporciona un representación visual de esto, ya que
-podemos obervar como el Doramapimod presenta valores de AUC más bajos
+podemos observar como el Doramapimod presenta valores de AUC más bajos
 que el inhibidor VIII de JNK, por lo que el primero presentaría niveles
 de sensibilidad celular superiores.
 
