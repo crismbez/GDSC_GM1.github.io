@@ -761,7 +761,7 @@ muy estrechamente con alta, media o baja sensibilidad.
 
 ## Respuesta a fármacos según la diana celular
 
-El resultado del análisis ANOVA muestra p \< 0,05, por lo que se rechaza
+El resultado del análisis ANOVA muestra p \< 0,05; por lo que se rechaza
 la hipótesis nula y se acepta la alternativa. La respuesta a fármacos
 muestra diferencias significativas entre las distintas dianas celulares.
 

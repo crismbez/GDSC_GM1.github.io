@@ -7,8 +7,8 @@ author: "Cristina Gómez Baena, Alma Gavilán Velasco, Reyes Mª Jurado Jiménez
 date: "`r Sys.Date ()`"
 
 output: 
-  # github_document:
-  #   html_preview: FALSE
+  github_document:
+     html_preview: FALSE
   html_document:
    theme: null
    css: styles.css #Aplicamos un estilo a nuestro HTML
@@ -31,11 +31,12 @@ La importancia de GDSC radica en que gracias a ella podemos identificar biomarca
 
 En este informe, utilizamos los datos almacenados en la [página del proyecto GDSC](https://www.cancerrxgene.org/downloads/bulk_download). En primer lugar, cargamos la librería [readxl]{style="color:purple;font-family:Courier New;"} y los datos en el environment, creando un objeto llamado [Data]{style="color:purple;font-family:Courier New;"}.
 
-```{r cargar dataset, echo= FALSE}
-#cambiar echo si se envía script.
+```{r cargar dataset, echo= FALSE, warning=FALSE, message=FALSE}
+#Cargamos los datos y los asignamos a un objeto
 library(readxl)
 Data <- read_excel("GDSC2_fitted_dose_response_27Oct23.xlsx")
 View(Data)
+
 ```
 
 La base de datos incluye `r ncol(Data)` variables. Contabilizamos las variables usando `ncol(Data)`. En nuestro proyecto seleccionaremos algunas de estas y analizaremos relaciones entre ellas con la finalidad de evaluar diferencias de sensibilidad entre distintos grupos comparables. Para ello, haremos uso de varios test estadísticos (*t de student*, *chi cuadrado*, *ANOVA*).
@@ -80,7 +81,8 @@ library(tidyverse)
 
 ## Procesado de los datos
 
-```{r visualización y comprobación dataset, echo=FALSE, include=FALSE}
+```{r visualización y comprobación dataset, echo=FALSE, warning=FALSE, message=FALSE, include=FALSE}
+
 glimpse(Data)
 
 is.na(Data) %>% head(n = 10)
@@ -90,7 +92,8 @@ sum(is.na(Data))
 
 Tras comprobar que no hay datos perdidos con `is.na()` y `sum()`, procesamos el dataset para seleccionar únicamente las variables con las que trabajaremos. Usamos las funciones `mutate()`, `relocate()` y `select()`, además de `rename()` para cambiar el nombre a las columnas. Para comprobarlo, elaboramos la siguiente tabla para visualizar las 10 primeras filas del dataset procesado.
 
-```{r procesado de los datos, echo=FALSE}
+```{r procesado de los datos, echo=FALSE, warning=FALSE, message=FALSE}
+
 DataProc <- Data %>% # Creamos un nuevo objeto que sean nuestros datos procesados
   mutate(Sensibilidad = case_when(
     LN_IC50 < -7 ~ "Alta",
@@ -154,6 +157,7 @@ Para realizar el análisis, compararemos los AUC de ambos fármacos para comprob
 Para llevar a cabo el análisis, primero seleccionamos solo las observaciones de la señalización JNK y p38. Luego, aplicamos el test.
 
 ```{r t student análisis, echo=TRUE, message=FALSE, warning=FALSE, results='hide'}
+
 JNK_p38 <- DataProc %>% 
   filter(Ruta_metabólica == "JNK and p38 signaling") #Filtramos por la vía de señalización sobre la que haremos el análisis
 
@@ -365,7 +369,7 @@ El gráfico de barras muestra de forma visual clara cómo los patrones de sensib
 
 ## Respuesta a fármacos según la diana celular
 
-El resultado del análisis ANOVA muestra p \< 0,05, por lo que se rechaza la hipótesis nula y se acepta la alternativa. La respuesta a fármacos muestra diferencias significativas entre las distintas dianas celulares.
+El resultado del análisis ANOVA muestra p \< 0,05; por lo que se rechaza la hipótesis nula y se acepta la alternativa. La respuesta a fármacos muestra diferencias significativas entre las distintas dianas celulares.
 
 El gráfico de barras divergentes muestra las dianas celulares más y menos sensibles según la mediana de IC50, de forma que las barras positivas muestran las dianas menos sensibles y las más negativas representan aquellas con mayor sensibilidad.
 
